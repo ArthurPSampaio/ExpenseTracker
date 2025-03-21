@@ -1,12 +1,17 @@
-import { useContext, useLayoutEffect } from "react";
+import { useContext, useState, useLayoutEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 import IconButton from "../components/UI/IconButton";
-import Button from "../components/UI/Button";
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
+import { storeExpense, updateExpense, deleteExpense } from "../util/http";
+import LoadingOverlay from "../components/UI/LoadingOverlay";
+import ErrorOverlay from "../components/UI/ErrorOverlay";
 
 function ManageExpense({ route, navigation }) {
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState();
+
   const expensesCtx = useContext(ExpensesContext);
 
   const editedExpenseId = route.params?.expenseId;
@@ -22,22 +27,52 @@ function ManageExpense({ route, navigation }) {
     });
   }, [navigation, isEditing]);
 
-  function deleteExpenseHandler() {
-    expensesCtx.deleteExpense(editedExpenseId);
-    navigation.goBack();
+  async function deleteExpenseHandler() {
+    setIsFetching(true);
+    try {
+      await deleteExpense(editedExpenseId);
+      expensesCtx.deleteExpense(editedExpenseId);
+      navigation.goBack();
+    } catch (error) {
+      setError('Could not delete expense - please try again later!')
+      setIsFetching(false)
+    }
   }
 
   function cancelHandler() {
     navigation.goBack();
   }
 
-  function confirmHandler(expenseData) {
+  async function confirmHandler(expenseData) {
+    setIsFetching(true);
     if (isEditing) {
-      expensesCtx.updateExpense(editedExpenseId, expenseData);
+      try {
+        expensesCtx.updateExpense(editedExpenseId, expenseData);
+        await updateExpense(editedExpenseId, expenseData);
+        setIsFetching(false);
+      } catch (error) {
+        setError("Could not update expense - please try again later!");
+        setIsFetching(false);
+      }
     } else {
-      expensesCtx.addExpense(expenseData);
+      try {
+        const id = await storeExpense(expenseData);
+        setIsFetching(false);
+        expensesCtx.addExpense({ ...expenseData, id });
+      } catch (error) {
+        setError("Could not add expense - please try again later!");
+        setIsFetching(false)
+      }
     }
     navigation.goBack();
+  }
+
+  if(error && !isFetching) {
+    return <ErrorOverlay message={error} />
+  }
+
+  if (isFetching) {
+    return <LoadingOverlay />;
   }
 
   return (
