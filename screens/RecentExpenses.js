@@ -6,6 +6,7 @@ import { getDateMinusDays } from "../util/date";
 import { fetchExpenses } from "../util/http";
 import LoadingOverlay from "../components/UI/LoadingOverlay";
 import ErrorOverlay from "../components/UI/ErrorOverlay";
+import Button from "../components/UI/Button";
 
 function RecentExpenses() {
   const [isFetching, setIsFetching] = useState(true);
@@ -13,23 +14,33 @@ function RecentExpenses() {
 
   const expensesCtx = useContext(ExpensesContext);
 
-  useEffect(() => {
-    async function getExpenses() {
-      setIsFetching(true);
-      try {
-        const expenses = await fetchExpenses();
-        expensesCtx.setExpenses(expenses);
-      } catch (error) {
-        setError('Could not fetch expenses!');
-      }
+  async function getExpenses() {
+    setIsFetching(true);
+    try {
+      const expenses = await fetchExpenses();
+      expensesCtx.setExpenses(expenses);
+      setError(null); // Limpa o erro se a operação for bem sucedida
+    } catch (error) {
+      setError(error.message || "Não foi possível carregar as despesas.");
+    } finally {
       setIsFetching(false);
     }
+  }
 
+  useEffect(() => {
     getExpenses();
   }, []);
 
   if (error && !isFetching) {
-    return <ErrorOverlay message={error} />
+    return (
+      <ErrorOverlay
+        message={error}
+        onConfirm={() => {
+          setError(null);
+          getExpenses();
+        }}
+      />
+    );
   }
 
   if (isFetching) {
@@ -40,14 +51,14 @@ function RecentExpenses() {
     const today = new Date();
     const date7DaysAgo = getDateMinusDays(today, 7);
 
-    return expense.date >= date7DaysAgo;
+    return expense.date >= date7DaysAgo && expense.date <= today;
   });
 
   return (
     <ExpensesOutput
       expenses={RecentExpenses}
-      expensesPeriod={"Last 7 days"}
-      fallbackText={"No expenses registered for the last 7 days."}
+      expensesPeriod={"Últimos 7 dias"}
+      fallbackText={"Nenhuma despesa registrada nos últimos 7 dias."}
     />
   );
 }

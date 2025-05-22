@@ -1,10 +1,12 @@
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import Button from "./Button";
 
-function ErrorOverlay({ message }) {
+function ErrorOverlay({ message, onConfirm }) {
   return (
     <View style={styles.container}>
       <Text style={[styles.text, styles.title]}>An error occurred!</Text>
       <Text style={styles.text}>{message}</Text>
+      <Button onPress={onConfirm}>Tentar Novamente</Button>
     </View>
   );
 }
@@ -20,11 +22,11 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   text: {
-    textAlign: 'center',
-    marginBottom: 8
+    textAlign: "center",
+    marginBottom: 8,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold'
-  }
+    fontWeight: "bold",
+  },
 });
