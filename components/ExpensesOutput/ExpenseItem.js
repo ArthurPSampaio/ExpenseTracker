@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
+import { Surface, Text, TouchableRipple } from "react-native-paper";
 import { getFormattedDate } from "../../util/date";
 import { useNavigation } from "@react-navigation/native";
 
@@ -6,70 +7,69 @@ function ExpenseItem({ id, description, amount, date }) {
   const navigation = useNavigation();
 
   function expensePressHandler() {
-    navigation.navigate('ManageExpense', {
-      expenseId: id
+    navigation.navigate("ExpenseDetails", {
+      expenseId: id,
     });
   }
 
   return (
-    <Pressable
-      onPress={expensePressHandler}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <View style={styles.expanseItem}>
-        <View>
-          <Text style={[styles.textBase, styles.description]}>
+    <TouchableRipple onPress={expensePressHandler} style={styles.container}>
+      <Surface style={styles.expenseItem}>
+        <Surface style={styles.infoContainer} elevation={0}>
+          <Text variant="titleMedium" style={styles.description}>
             {description}
           </Text>
-          <Text style={styles.textBase}>{getFormattedDate(date)}</Text>
-        </View>
-        <View style={styles.amountContainer}>
-          <Text style={[styles.textBase, styles.amount]}>
-            {amount.toFixed(2)}
+          <Text variant="bodyMedium" style={styles.date}>
+            {getFormattedDate(date)}
           </Text>
-        </View>
-      </View>
-    </Pressable>
+        </Surface>
+        <Surface style={styles.amountContainer} elevation={2}>
+          <Text variant="titleMedium" style={styles.amount}>
+            R$ {amount.toFixed(2)}
+          </Text>
+        </Surface>
+      </Surface>
+    </TouchableRipple>
   );
 }
 
 export default ExpenseItem;
 
 const styles = StyleSheet.create({
-  pressed: {
-    opacity: 0.75,
-  },
-  expanseItem: {
-    padding: 12,
+  container: {
     marginVertical: 8,
-    backgroundColor: "#dddddd",
+    borderRadius: 8,
+  },
+  expenseItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderRadius: 6,
+    alignItems: "center",
+    padding: 12,
+    backgroundColor: "white",
+    borderRadius: 8,
     elevation: 3,
-    shadowColor: "blak",
-    shadowRadius: 4,
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.4,
   },
-  textBase: {
-    color: "black",
+  infoContainer: {
+    flex: 1,
+    backgroundColor: "transparent",
   },
   description: {
-    fontSize: 16,
     marginBottom: 4,
-    fontWeight: "bold",
+  },
+  date: {
+    color: "#666666",
   },
   amountContainer: {
+    minWidth: 100,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: "white",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#6200ee",
     borderRadius: 4,
-    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
   },
   amount: {
-    fontWeight: "bold",
+    color: "white",
   },
 });

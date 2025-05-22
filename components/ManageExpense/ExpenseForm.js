@@ -1,18 +1,45 @@
-import { StyleSheet, View, Text, Alert } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useState } from "react";
+import { TextInput, Button, Surface, Text } from "react-native-paper";
+import MaskInput from "react-native-mask-input";
 
-import Input from "./Input";
-import Button from "../UI/Button";
-import { getFormattedDate } from "../../util/date";
+import {
+  getFormattedDate,
+  formatDateForInput,
+  parseDateString,
+  isValidDate,
+  formatCurrency,
+} from "../../util/date";
+
+const currencyMask = [
+  "R",
+  "$",
+  " ",
+  /\d/,
+  /\d/,
+  /\d/,
+  /\d/,
+  /\d/,
+  /\d/,
+  /\d/,
+  /\d/,
+  ",",
+  /\d/,
+  /\d/,
+];
 
 function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
   const [inputs, setInputs] = useState({
     amount: {
-      value: defaultValues ? defaultValues.amount.toString() : "",
+      value: defaultValues
+        ? `R$ ${defaultValues.amount.toFixed(2).replace(".", ",")}`
+        : "R$ ",
       isValid: true,
     },
     date: {
-      value: defaultValues ? getFormattedDate(defaultValues.date) : "",
+      value: defaultValues
+        ? getFormattedDate(defaultValues.date)
+        : getFormattedDate(new Date()),
       isValid: true,
     },
     description: {
@@ -31,9 +58,13 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
   }
 
   function submitHandler() {
+    // Remove todos os caracteres não numéricos e o ponto decimal
+    let amount = inputs.amount.value.replace(/[^\d,]/g, "").replace(",", ".");
+    amount = parseFloat(amount);
+
     const expenseData = {
-      amount: +inputs.amount.value, // + converte string para number
-      date: new Date(inputs.date.value),
+      amount: amount,
+      date: parseDateString(inputs.date.value) || new Date(),
       description: inputs.description.value,
     };
 
@@ -42,7 +73,6 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
     const descriptionIsValid = expenseData.description.trim().length > 0;
 
     if (!amountIsValid || !dateIsValid || !descriptionIsValid) {
-      // Alert.alert("Invalid Input", "Please check your edit values");
       setInputs((curInputs) => {
         return {
           amount: { value: curInputs.amount.value, isValid: amountIsValid },
@@ -65,56 +95,80 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
     !inputs.description.isValid;
 
   return (
-    <View style={styles.form}>
-      <Text style={styles.title}>Your Expense</Text>
-      <View style={styles.inputRow}>
-        <Input
-          style={styles.rowInput}
-          label="Amount"
-          invalid={!inputs.amount.isValid}
-          textInputConfig={{
-            keyboardType: "decimal-pad",
-            onChangeText: inputChangeHandler.bind(this, "amount"),
-            value: inputs.amount.value,
-          }}
-        />
-        <Input
-          style={styles.rowInput}
-          label="Date"
-          invalid={!inputs.date.isValid}
-          textInputConfig={{
-            placeholder: "YYYY-MM-DD",
-            maxLength: 10,
-            onChangeText: inputChangeHandler.bind(this, "date"),
-            value: inputs.date.value,
-          }}
-        />
-      </View>
-      <Input
-        label="Description"
-        invalid={!inputs.description.isValid}
-        textInputConfig={{
-          multiLine: true,
-          // autoCapitalize: 'none'
-          // autoCorrect: false // default is true
-          onChangeText: inputChangeHandler.bind(this, "description"),
-          value: inputs.description.value,
-        }}
+    <Surface style={styles.form} elevation={2}>
+      <Text variant="headlineMedium" style={styles.title}>
+        Sua Despesa
+      </Text>
+
+      <TextInput
+        label="Descrição"
+        mode="outlined"
+        value={inputs.description.value}
+        onChangeText={inputChangeHandler.bind(this, "description")}
+        error={!inputs.description.isValid}
+        style={styles.input}
+        multiline
       />
+
+      <View style={styles.inputRow}>
+        <View style={styles.amountContainer}>
+          <TextInput
+            label="Valor"
+            mode="outlined"
+            value={inputs.amount.value}
+            render={({ value, ...props }) => (
+              <MaskInput
+                {...props}
+                value={value}
+                onChangeText={(masked) => {
+                  if (!masked.startsWith("R$ ")) {
+                    masked = "R$ " + masked;
+                  }
+                  inputChangeHandler("amount", masked);
+                }}
+                mask={currencyMask}
+                keyboardType="numeric"
+                style={[props.style]}
+              />
+            )}
+            error={!inputs.amount.isValid}
+            style={[styles.input, styles.amountInput]}
+          />
+        </View>
+
+        <View style={styles.dateContainer}>
+          <TextInput
+            label="Data"
+            mode="outlined"
+            value={inputs.date.value}
+            onChangeText={(text) => {
+              const formattedDate = formatDateForInput(text);
+              inputChangeHandler("date", formattedDate);
+            }}
+            error={!inputs.date.isValid}
+            style={[styles.input, styles.dateInput]}
+            placeholder="DD/MM/AAAA"
+            keyboardType="numeric"
+            maxLength={10}
+          />
+        </View>
+      </View>
+
       {formIsInvalid && (
         <Text style={styles.errorText}>
-          Invalid input values - please check your entered data!
+          Por favor, verifique os dados inseridos!
         </Text>
       )}
+
       <View style={styles.buttons}>
-        <Button style={styles.button} mode={"flat"} onPress={onCancel}>
-          Cancel
+        <Button mode="outlined" onPress={onCancel} style={styles.button}>
+          Cancelar
         </Button>
-        <Button style={styles.button} onPress={submitHandler}>
+        <Button mode="contained" onPress={submitHandler} style={styles.button}>
           {submitButtonLabel}
         </Button>
       </View>
-    </View>
+    </Surface>
   );
 }
 
@@ -122,33 +176,48 @@ export default ExpenseForm;
 
 const styles = StyleSheet.create({
   form: {
-    //marginTop: 40,
+    padding: 20,
+    borderRadius: 8,
+    backgroundColor: "white",
   },
   title: {
-    fontWeight: "bold",
-    fontSize: 20,
-    marginVertical: 24,
     textAlign: "center",
+    marginBottom: 20,
+    color: "#6200ee",
+  },
+  input: {
+    marginBottom: 12,
+    backgroundColor: "white",
   },
   inputRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 8,
   },
-  rowInput: {
+  amountContainer: {
     flex: 1,
   },
+  dateContainer: {
+    flex: 1,
+  },
+  amountInput: {
+    backgroundColor: "white",
+  },
+  dateInput: {
+    textAlign: "center",
+  },
   errorText: {
-    textAlign: 'center',
-    color: 'red',
-    margin: 8
+    textAlign: "center",
+    color: "#B00020",
+    marginVertical: 8,
   },
   buttons: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
   },
   button: {
-    minWidth: 120,
-    marginHorizontal: 8,
+    flex: 1,
+    marginHorizontal: 4,
   },
 });

@@ -1,9 +1,16 @@
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Surface, Text } from "react-native-paper";
 import ExpensesSummary from "./ExpensesSummary";
 import ExpensesList from "./ExpensesList";
 
 function ExpensesOutput({ expenses, expensesPeriod, fallbackText }) {
-  let content = <Text style={styles.infoText}>{fallbackText}</Text>
+  let content = (
+    <Surface style={styles.fallbackContainer}>
+      <Text variant="titleLarge" style={styles.infoText}>
+        {fallbackText}
+      </Text>
+    </Surface>
+  );
 
   if (expenses.length > 0) {
     content = <ExpensesList expenses={expenses} />;
@@ -20,14 +27,23 @@ function ExpensesOutput({ expenses, expensesPeriod, fallbackText }) {
 export default ExpensesOutput;
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 24,
-         backgroundColor: '#f5f5f5',
-        flex: 1
-    },
-    infoText: {
-      fontSize: 16,
-      textAlign: 'center',
-      marginTop: 32
-    }
-})
+  container: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: "#f6f6f6",
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 8,
+    elevation: 2,
+    marginTop: 32,
+  },
+  infoText: {
+    color: "#666666",
+    textAlign: "center",
+    padding: 24,
+  },
+});

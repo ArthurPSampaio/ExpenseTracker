@@ -1,7 +1,7 @@
 import { useContext, useState, useLayoutEffect } from "react";
 import { StyleSheet, View } from "react-native";
+import { IconButton as PaperIconButton } from "react-native-paper";
 
-import IconButton from "../components/UI/IconButton";
 import { ExpensesContext } from "../store/expenses-context";
 import ExpenseForm from "../components/ManageExpense/ExpenseForm";
 import { storeExpense, updateExpense, deleteExpense } from "../util/http";
@@ -23,7 +23,7 @@ function ManageExpense({ route, navigation }) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: isEditing ? "Edit Expense" : "Add Expense",
+      title: isEditing ? "Editar Despesa" : "Nova Despesa",
     });
   }, [navigation, isEditing]);
 
@@ -34,8 +34,10 @@ function ManageExpense({ route, navigation }) {
       expensesCtx.deleteExpense(editedExpenseId);
       navigation.goBack();
     } catch (error) {
-      setError('Could not delete expense - please try again later!')
-      setIsFetching(false)
+      setError(
+        "Não foi possível excluir a despesa. Tente novamente mais tarde."
+      );
+      setIsFetching(false);
     }
   }
 
@@ -45,30 +47,27 @@ function ManageExpense({ route, navigation }) {
 
   async function confirmHandler(expenseData) {
     setIsFetching(true);
-    if (isEditing) {
-      try {
+    try {
+      if (isEditing) {
         expensesCtx.updateExpense(editedExpenseId, expenseData);
         await updateExpense(editedExpenseId, expenseData);
-        setIsFetching(false);
-      } catch (error) {
-        setError("Could not update expense - please try again later!");
-        setIsFetching(false);
-      }
-    } else {
-      try {
+      } else {
         const id = await storeExpense(expenseData);
-        setIsFetching(false);
         expensesCtx.addExpense({ ...expenseData, id });
-      } catch (error) {
-        setError("Could not add expense - please try again later!");
-        setIsFetching(false)
       }
+      navigation.goBack();
+    } catch (error) {
+      setError(
+        isEditing
+          ? "Não foi possível atualizar a despesa. Tente novamente mais tarde."
+          : "Não foi possível adicionar a despesa. Tente novamente mais tarde."
+      );
+      setIsFetching(false);
     }
-    navigation.goBack();
   }
 
-  if(error && !isFetching) {
-    return <ErrorOverlay message={error} />
+  if (error && !isFetching) {
+    return <ErrorOverlay message={error} />;
   }
 
   if (isFetching) {
@@ -78,21 +77,21 @@ function ManageExpense({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ExpenseForm
-        submitButtonLabel={isEditing ? "Update" : "Add"}
+        submitButtonLabel={isEditing ? "Atualizar" : "Adicionar"}
         onSubmit={confirmHandler}
         onCancel={cancelHandler}
         defaultValues={selectedExpense}
       />
-      {isEditing && (
+       { /*isEditing && ( 
         <View style={styles.deleteContainer}>
-          <IconButton
-            icon="trash"
-            color={"red"}
-            size={36}
+          <PaperIconButton
+            icon="delete"
+            iconColor="#B00020"
+            size={32}
             onPress={deleteExpenseHandler}
           />
         </View>
-      )}
+      ) */}
     </View>
   );
 }
@@ -103,12 +102,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "",
+    backgroundColor: "#f6f6f6",
   },
   deleteContainer: {
     marginTop: 16,
     paddingTop: 8,
-    borderTopWidth: 2,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
     alignItems: "center",
   },
 });
