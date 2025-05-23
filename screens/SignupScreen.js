@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { app } from "../config/firebase";
+import { signUp } from "../util/auth";
 
 function SignupScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -10,14 +9,19 @@ function SignupScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const auth = getAuth(app);
+  const [successMessage, setSuccessMessage] = useState("");
 
   async function signupHandler() {
+    if (!email.trim()) {
+      setError("Por favor, insira um email!");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("As senhas não coincidem!");
       return;
     }
+
     if (password.length < 6) {
       setError("A senha deve ter pelo menos 6 caracteres!");
       return;
@@ -25,28 +29,45 @@ function SignupScreen({ navigation }) {
 
     setIsLoading(true);
     setError("");
+    setSuccessMessage("");
+
     try {
-      console.log("Tentando criar usuário com:", { email, password });
-      await createUserWithEmailAndPassword(auth, email, password);
-      console.log("Usuário criado com sucesso!");
-      // A navegação será feita automaticamente pelo sistema de autenticação
-    } catch (error) {
-      console.error("Erro completo:", error);
-      let message = `Erro ao criar conta: ${error.code} - ${error.message}`;
-      if (error.code === "auth/email-already-in-use") {
-        message = "Este email já está em uso!";
-      } else if (error.code === "auth/invalid-email") {
-        message = "Email inválido!";
-      } else if (error.code === "auth/weak-password") {
-        message = "A senha é muito fraca!";
-      } else if (error.code === "auth/network-request-failed") {
-        message = "Erro de conexão. Verifique sua internet.";
-      } else if (error.code === "auth/operation-not-allowed") {
-        message = "O cadastro com email/senha não está habilitado.";
+      const result = await signUp(email, password);
+      console.log("Resultado do cadastro:", result);
+
+      if (result?.user?.confirmation_sent_at) {
+        setSuccessMessage(
+          "Por favor, verifique seu email para confirmar o cadastro!"
+        );
+        // Não navega automaticamente, espera a confirmação do email
+      } else {
+        // Se não precisar de confirmação, pode navegar
+        navigation.navigate("Login");
       }
+    } catch (error) {
+      console.error("Erro detalhado ao criar conta:", error);
+      let message = "Erro ao criar conta";
+
+      if (
+        error.message?.includes("already registered") ||
+        error.message?.includes("já está cadastrado")
+      ) {
+        message = "Este email já está em uso!";
+      } else if (error.message?.includes("Invalid email")) {
+        message = "Email inválido!";
+      } else if (error.message?.includes("weak-password")) {
+        message = "A senha é muito fraca!";
+      } else if (error.message?.includes("network")) {
+        message = "Erro de conexão. Verifique sua internet.";
+      } else if (error.message?.includes("confirme seu email")) {
+        setSuccessMessage(error.message);
+        message = "";
+      }
+
       setError(message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   return (
@@ -80,16 +101,31 @@ function SignupScreen({ navigation }) {
           secureTextEntry
           style={styles.input}
         />
+
         {error ? (
-          <Surface style={styles.errorContainer} elevation={1}>
+          <Surface
+            style={[styles.messageContainer, styles.errorContainer]}
+            elevation={1}
+          >
             <Text style={styles.errorText}>{error}</Text>
           </Surface>
         ) : null}
+
+        {successMessage ? (
+          <Surface
+            style={[styles.messageContainer, styles.successContainer]}
+            elevation={1}
+          >
+            <Text style={styles.successText}>{successMessage}</Text>
+          </Surface>
+        ) : null}
+
         <Button
           mode="contained"
           onPress={signupHandler}
           loading={isLoading}
           style={styles.button}
+          disabled={isLoading}
         >
           Cadastrar
         </Button>
@@ -97,6 +133,7 @@ function SignupScreen({ navigation }) {
           mode="text"
           onPress={() => navigation.navigate("Login")}
           style={styles.button}
+          disabled={isLoading}
         >
           Já tem uma conta? Faça login
         </Button>
@@ -130,14 +167,23 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
   },
-  errorContainer: {
-    backgroundColor: "#ffebee",
+  messageContainer: {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
   },
+  errorContainer: {
+    backgroundColor: "#ffebee",
+  },
+  successContainer: {
+    backgroundColor: "#e8f5e9",
+  },
   errorText: {
     color: "#B00020",
+    textAlign: "center",
+  },
+  successText: {
+    color: "#2e7d32",
     textAlign: "center",
   },
 });

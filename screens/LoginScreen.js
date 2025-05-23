@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { TextInput, Button, Surface, Text } from "react-native-paper";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { app } from "../config/firebase";
+import { signIn } from "../util/auth";
 
 function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -10,30 +9,24 @@ function LoginScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const auth = getAuth(app);
-
   async function loginHandler() {
     setIsLoading(true);
     setError("");
     try {
-      console.log("Tentando fazer login com:", { email });
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("Login bem sucedido!");
+      await signIn(email, password);
       // A navegação será feita automaticamente pelo sistema de autenticação
     } catch (error) {
-      console.error("Erro completo:", error);
-      let message = `Erro ao fazer login: ${error.code} - ${error.message}`;
-      if (error.code === "auth/invalid-email") {
+      console.error("Erro ao fazer login:", error);
+      let message = "Erro ao fazer login";
+
+      if (error.message?.includes("Invalid login credentials")) {
+        message = "Email ou senha incorretos!";
+      } else if (error.message?.includes("Invalid email")) {
         message = "Email inválido!";
-      } else if (error.code === "auth/wrong-password") {
-        message = "Senha incorreta!";
-      } else if (error.code === "auth/user-not-found") {
-        message = "Usuário não encontrado!";
-      } else if (error.code === "auth/network-request-failed") {
+      } else if (error.message?.includes("network")) {
         message = "Erro de conexão. Verifique sua internet.";
-      } else if (error.code === "auth/too-many-requests") {
-        message = "Muitas tentativas. Tente novamente mais tarde.";
       }
+
       setError(message);
     }
     setIsLoading(false);

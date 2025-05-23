@@ -1,4 +1,5 @@
-import { createContext, useReducer } from "react";
+import { createContext, useReducer, useEffect } from "react";
+import { fetchExpenses } from "../util/expenses-service";
 
 export const ExpensesContext = createContext({
   expenses: [],
@@ -13,8 +14,7 @@ function expensesReducer(state, action) {
     case "ADD":
       return [action.payload, ...state];
     case "SET":
-      const inverted = action.payload.reverse();
-      return inverted;
+      return action.payload;
     case "UPDATE":
       const updatableExpenseIndex = state.findIndex(
         (expense) => expense.id === action.payload.id
@@ -34,6 +34,18 @@ function expensesReducer(state, action) {
 function ExpensesContextProvider({ children }) {
   const [expensesState, dispatch] = useReducer(expensesReducer, []);
 
+  useEffect(() => {
+    async function getExpenses() {
+      try {
+        const expenses = await fetchExpenses();
+        dispatch({ type: "SET", payload: expenses });
+      } catch (error) {
+        console.error("Erro ao carregar despesas:", error);
+      }
+    }
+    getExpenses();
+  }, []);
+
   function addExpense(expenseData) {
     dispatch({ type: "ADD", payload: expenseData });
   }
@@ -52,8 +64,8 @@ function ExpensesContextProvider({ children }) {
 
   const value = {
     expenses: expensesState,
-    setExpenses: setExpenses,
     addExpense: addExpense,
+    setExpenses: setExpenses,
     deleteExpense: deleteExpense,
     updateExpense: updateExpense,
   };

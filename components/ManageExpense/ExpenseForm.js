@@ -58,6 +58,8 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
   }
 
   function submitHandler() {
+    console.log("Iniciando submissão do formulário");
+
     // Remove todos os caracteres não numéricos e o ponto decimal
     let amount = inputs.amount.value.replace(/[^\d,]/g, "").replace(",", ".");
     amount = parseFloat(amount);
@@ -68,11 +70,23 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
       description: inputs.description.value,
     };
 
+    console.log("Dados do formulário:", expenseData);
+
     const amountIsValid = !isNaN(expenseData.amount) && expenseData.amount > 0;
     const dateIsValid = expenseData.date.toString() !== "Invalid Date";
     const descriptionIsValid = expenseData.description.trim().length > 0;
 
+    console.log("Validação:", {
+      amountIsValid,
+      dateIsValid,
+      descriptionIsValid,
+      amount: expenseData.amount,
+      date: expenseData.date.toString(),
+      description: expenseData.description,
+    });
+
     if (!amountIsValid || !dateIsValid || !descriptionIsValid) {
+      console.log("Formulário inválido");
       setInputs((curInputs) => {
         return {
           amount: { value: curInputs.amount.value, isValid: amountIsValid },
@@ -86,6 +100,7 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
       return;
     }
 
+    console.log("Formulário válido, enviando dados");
     onSubmit(expenseData);
   }
 
@@ -156,7 +171,9 @@ function ExpenseForm({ submitButtonLabel, onCancel, onSubmit, defaultValues }) {
 
       {formIsInvalid && (
         <Text style={styles.errorText}>
-          Por favor, verifique os dados inseridos!
+          {!inputs.amount.isValid && "O valor deve ser maior que zero\n"}
+          {!inputs.date.isValid && "A data inserida é inválida\n"}
+          {!inputs.description.isValid && "A descrição não pode estar vazia"}
         </Text>
       )}
 

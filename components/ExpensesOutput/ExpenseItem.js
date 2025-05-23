@@ -13,7 +13,11 @@ function ExpenseItem({ id, description, amount, date }) {
   }
 
   return (
-    <TouchableRipple onPress={expensePressHandler} style={styles.container}>
+    <TouchableRipple
+      onPress={expensePressHandler}
+      style={styles.container}
+      key={id}
+    >
       <Surface style={styles.expenseItem}>
         <Surface style={styles.infoContainer} elevation={0}>
           <Text variant="titleMedium" style={styles.description}>

@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Provider as PaperProvider, DefaultTheme } from "react-native-paper";
 import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { subscribeToAuthChanges, signOut } from "./util/auth";
 
 import ManageExpense from "./screens/ManageExpense";
 import RecentExpenses from "./screens/RecentExpenses";
@@ -33,8 +33,6 @@ const theme = {
 };
 
 function ExpensesOverview() {
-  const auth = getAuth();
-
   return (
     <BottomTabs.Navigator
       screenOptions={({ navigation }) => ({
@@ -57,9 +55,7 @@ function ExpensesOverview() {
             icon="log-out"
             size={24}
             color={tintColor}
-            onPress={() => {
-              auth.signOut();
-            }}
+            onPress={signOut}
           />
         ),
       })}
@@ -148,15 +144,18 @@ function AuthenticatedStack() {
 function Navigation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = subscribeToAuthChanges((user) => {
       setIsAuthenticated(!!user);
       setIsInitializing(false);
     });
 
-    return unsubscribe;
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
   }, []);
 
   if (isInitializing) {
